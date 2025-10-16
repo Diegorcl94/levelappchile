@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190636864451",
+    "project_id": "levelaapchile",
+    "storage_bucket": "levelaapchile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190636864451:android:25a2926a06114f1a3b8376",
+        "android_client_info": {
+          "package_name": "cl.duoc.levelappchile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfSkSoaPYS5O5I6rpaeazY4f8mja4MQcU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
