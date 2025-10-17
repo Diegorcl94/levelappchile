@@ -1,5 +1,6 @@
 package cl.duoc.levelappchile.ui.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,12 +9,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import cl.duoc.levelappchile.ui.viewmodel.AuthState
 import cl.duoc.levelappchile.ui.viewmodel.AuthViewModel
 import cl.duoc.levelappchile.ui.components.LoginBackgroundLottie
+import cl.duoc.levelappchile.R
 
 @Composable
 fun LoginScreen(
@@ -31,10 +35,10 @@ fun LoginScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        // 1) Fondo animado Lottie
+        // 1) Fondo animado Lottie (no se toca)
         LoginBackgroundLottie()
 
-        // 2) Scrim para mejorar legibilidad sobre el fondo
+        // 2) Scrim para legibilidad sobre el fondo
         Box(
             Modifier
                 .matchParentSize()
@@ -49,7 +53,7 @@ fun LoginScreen(
                 )
         )
 
-        // 3) Contenido del formulario (tu mismo flujo)
+        // 3) Contenido del formulario
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -57,7 +61,17 @@ fun LoginScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("LevelUp Store", style = MaterialTheme.typography.headlineMedium)
+            // 🔹 Logo en lugar del texto
+            Image(
+                painter = painterResource(id = R.drawable.levelup_logo),
+                contentDescription = "Logo LevelUp",
+                modifier = Modifier
+                    .width(300.dp)      // ajusta el tamaño según tu logo
+                    .height(160.dp)
+                    .padding(bottom = 12.dp),
+                contentScale = ContentScale.Fit
+            )
+
             Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
