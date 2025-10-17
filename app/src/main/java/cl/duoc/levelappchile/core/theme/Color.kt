@@ -4,6 +4,6 @@ import androidx.compose.ui.graphics.Color
 
 val XboxGreen = Color(0xFF107C10)
 val XboxGreenDark = Color(0xFF0B5E0B)
-val Night = Color(0xFF0E0F10)
-val Graphite = Color(0xFF1A1C1E)
-val TextOnDark = Color(0xFFF80505)
+val Night = Color(0xFFEFF0F1)
+val Graphite = Color(0xFFF0F2F3)
+val TextOnDark = Color(0xFFCCB7B7)
