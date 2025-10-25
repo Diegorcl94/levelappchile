@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
-    <!-- Permitimos usar cache interna para la foto -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cache interna completa -->
     <cache-path name="cache" path="."/>
-    <external-cache-path name="external_cache" path="."/>
+    <!-- Subcarpeta usada por la cámara: cache/images/ -->
+    <cache-path name="images" path="images/"/>
+
+    <!-- Alternativas externas por si el OEM lo requiere -->
+    <external-cache-path name="ext_cache" path="."/>
+    <external-files-path name="ext_pictures" path="Pictures/"/>
 </paths>
