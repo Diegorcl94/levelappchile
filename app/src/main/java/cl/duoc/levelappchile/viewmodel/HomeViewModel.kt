@@ -1,5 +1,6 @@
 package cl.duoc.levelappchile.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.levelappchile.data.model.Banner
@@ -8,7 +9,6 @@ import cl.duoc.levelappchile.data.repository.RepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
 
 class HomeViewModel : ViewModel() {
 
@@ -18,16 +18,20 @@ class HomeViewModel : ViewModel() {
     val banners: StateFlow<List<Banner>> = _banners
 
     init {
+        loadBanners()
+    }
+
+    /** 🔹 Carga los banners de Firebase al iniciar la vista */
+    private fun loadBanners() {
         viewModelScope.launch {
-            runCatching { repo.getBanners() }
-                .onSuccess { list ->
-                    Log.d("HomeVM", "Banners cargados: ${list.size}")
-                    _banners.value = list
-                }
-                .onFailure { e ->
-                    Log.e("HomeVM", "Error cargando banners", e)
-                    _banners.value = emptyList() // evita crash en UI
-                }
+            try {
+                val list = repo.getBanners()
+                _banners.value = list
+                Log.d("HomeViewModel", "✅ Banners cargados: ${list.size}")
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "❌ Error cargando banners: ${e.message}")
+                _banners.value = emptyList()
+            }
         }
     }
 }

@@ -1,10 +1,7 @@
 package cl.duoc.levelappchile.data.remote
 
-import cl.duoc.levelappchile.data.model.Banner
 import android.net.Uri
-import cl.duoc.levelappchile.data.model.NewsItem
-import cl.duoc.levelappchile.data.model.Product
-import cl.duoc.levelappchile.data.model.UsedGame
+import cl.duoc.levelappchile.data.model.*
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.Query
@@ -27,65 +24,69 @@ class FirebaseService {
         auth.signInWithEmailAndPassword(email, pass).awaitUnit()
 
     fun currentUid(): String? = auth.currentUser?.uid
-    suspend fun reset(email: String) = auth.sendPasswordResetEmail(email).awaitUnit()
 
-    /* ============== PERFIL (modelo remoto) ============== */
+    suspend fun reset(email: String) =
+        auth.sendPasswordResetEmail(email).awaitUnit()
+
+    /* ============== PERFIL ============== */
     suspend fun getProfile(uid: String): UserProfile? =
-        db.collection("profiles").document(uid).get().await().toObject(UserProfile::class.java)
+        db.collection("profiles").document(uid)
+            .get().await()
+            .toObject(UserProfile::class.java)
 
     suspend fun saveProfile(profile: UserProfile) {
-        db.collection("profiles").document(profile.uid).set(profile).awaitUnit()
+        db.collection("profiles").document(profile.uid)
+            .set(profile).awaitUnit()
     }
 
     suspend fun updateProfileField(uid: String, field: String, value: String) {
-        db.collection("profiles").document(uid).update(mapOf(field to value)).awaitUnit()
+        db.collection("profiles").document(uid)
+            .update(mapOf(field to value)).awaitUnit()
     }
 
-    /* ============== PRODUCTS / CATALOGO ============== */
+    /* ============== PRODUCTOS / CATÁLOGO ============== */
     suspend fun getNewProducts(): List<Product> =
         db.collection("products")
             .whereEqualTo("isNew", true)
-            .get()
-            .await()
+            .get().await()
             .toObjects(Product::class.java)
 
     suspend fun getProductsByCategory(cat: String): List<Product> =
         db.collection("products")
             .whereEqualTo("platform", cat)
-            .get()
-            .await()
+            .get().await()
             .toObjects(Product::class.java)
 
-    /* ============== NEWS (carrusel) ============== */
+    /* ============== NOTICIAS ============== */
     suspend fun getNews(): List<NewsItem> =
         db.collection("news")
             .orderBy("createdAt", Query.Direction.ASCENDING)
-            .get()
-            .await()
+            .get().await()
             .toObjects(NewsItem::class.java)
+
+    /* ============== BANNERS (para HomeScreen) ============== */
+    suspend fun getBanners(): List<Banner> =
+        db.collection("banners")
+            .whereEqualTo("isActive", true) // solo banners activos
+            .orderBy("order", Query.Direction.ASCENDING) // orden personalizable
+            .get().await()
+            .toObjects(Banner::class.java)
 
     /* ============== COMPRAS / USADOS ============== */
     suspend fun getPurchases(uid: String): List<Product> =
-        db.collection("purchases").document(uid).collection("items")
-            .get().await().toObjects(Product::class.java)
+        db.collection("purchases").document(uid)
+            .collection("items")
+            .get().await()
+            .toObjects(Product::class.java)
 
     suspend fun postUsedGame(game: UsedGame) {
         db.collection("usedGames").add(game).awaitUnit()
     }
 
-    suspend fun getBanners(): List<Banner> =
-        db.collection("banners")
-            .whereEqualTo("isActive", true)
-            .orderBy("order", Query.Direction.ASCENDING)
-            .get()
-            .await()
-            .toObjects(Banner::class.java)
-
     suspend fun getUsedByUser(uid: String): List<UsedGame> =
         db.collection("usedGames")
             .whereEqualTo("sellerUid", uid)
-            .get()
-            .await()
+            .get().await()
             .toObjects(UsedGame::class.java)
 
     /* ============== STORAGE ============== */
@@ -96,7 +97,7 @@ class FirebaseService {
     }
 }
 
-/* ====== Helpers await ====== */
+/* ============== HELPERS await() ============== */
 suspend fun <T> com.google.android.gms.tasks.Task<T>.await(): T =
     suspendCancellableCoroutine { cont ->
         addOnCompleteListener {

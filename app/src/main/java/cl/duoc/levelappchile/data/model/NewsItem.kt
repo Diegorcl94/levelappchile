@@ -1,7 +1,8 @@
 package cl.duoc.levelappchile.data.model
 
 data class NewsItem(
-    val imageUrl: String = "",
     val title: String = "",
-    val createdAt: Long = 0L
+    val body: String = "",        // 📰 texto de la noticia
+    val imageUrl: String = "",    // 🖼️ URL de la imagen
+    val createdAt: Long? = null   // 🕒 timestamp en milisegundos
 )
