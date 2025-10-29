@@ -16,6 +16,8 @@ import cl.duoc.levelappchile.ui.screens.news.NewsScreen
 import cl.duoc.levelappchile.ui.screens.profile.ProfileScreen
 import cl.duoc.levelappchile.ui.screens.sell.SellUsedScreen
 import cl.duoc.levelappchile.ui.screens.home.HomeScreen as HomeHomeScreen
+import cl.duoc.levelappchile.ui.screens.cart.CartScreen
+
 
 @Composable
 fun Navigation(
@@ -55,5 +57,7 @@ fun Navigation(
 
         // Perfil
         composable("profile") { ProfileScreen(navController) }
+
+        composable(route = "cart") { CartScreen(navController) }
     }
 }

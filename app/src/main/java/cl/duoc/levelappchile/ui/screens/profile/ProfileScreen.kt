@@ -2,7 +2,10 @@ package cl.duoc.levelappchile.ui.screens.profile
 
 import cl.duoc.levelappchile.ui.components.RemoteCoverImage
 import cl.duoc.levelappchile.ui.components.RemoteCircleImage
+import android.Manifest
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -34,14 +37,14 @@ import cl.duoc.levelappchile.ui.viewmodel.ProfileViewModel
 import cl.duoc.levelappchile.ui.viewmodel.SellViewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
-
+import cl.duoc.levelappchile.data.local.AppDatabase
+import cl.duoc.levelappchile.data.local.entity.MyGame
 
 /* ===== Helpers ===== */
 
 @Composable
 private fun RemoteCoverImage(url: String?, modifier: Modifier = Modifier) {
     if (url.isNullOrBlank()) {
-        // Fallback visual (gradiente)
         Box(
             modifier
                 .background(
@@ -123,7 +126,7 @@ fun ProfileScreen(
     sellVm: SellViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val profile by vm.profile.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) } // 0 Publicaciones, 1 Mis juegos, 2 Vender
+    var selectedTab by remember { mutableStateOf(0) }
 
     val repo = remember { RepositoryImpl(FirebaseService()) }
     val scope = rememberCoroutineScope()
@@ -131,7 +134,15 @@ fun ProfileScreen(
     var posts by remember { mutableStateOf<List<UsedGame>>(emptyList()) }
     var purchases by remember { mutableStateOf<List<Product>>(emptyList()) }
 
-    // Diálogos para editar URLs
+    // 🔹 Juegos comprados desde Room
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val dao = remember { AppDatabase.get(ctx).cartDao() }
+    var myGames by remember { mutableStateOf(listOf<MyGame>()) }
+
+    LaunchedEffect(Unit) {
+        dao.getMyGames().collect { myGames = it }
+    }
+
     var showEditAvatar by remember { mutableStateOf(false) }
     var showEditCover by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -148,8 +159,6 @@ fun ProfileScreen(
     LaunchedEffect(Unit) { refreshAll() }
 
     Column(Modifier.fillMaxSize()) {
-
-        // ======= BANNER con botón para cambiar portada (por URL) =======
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,7 +170,6 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Botón portada (derecha arriba)
             IconButton(
                 onClick = { showEditCover = true },
                 modifier = Modifier.align(Alignment.TopEnd)
@@ -173,7 +181,6 @@ fun ProfileScreen(
                 )
             }
 
-            // Avatar + nombre
             Row(
                 Modifier
                     .align(Alignment.BottomStart)
@@ -185,7 +192,6 @@ fun ProfileScreen(
                         url = profile?.photoUrl,
                         modifier = Modifier.size(80.dp)
                     )
-                    // Lápiz superpuesto (avatar)
                     IconButton(
                         onClick = { showEditAvatar = true },
                         modifier = Modifier
@@ -217,7 +223,6 @@ fun ProfileScreen(
             }
         }
 
-        // Stats
         Row(
             Modifier
                 .fillMaxWidth()
@@ -228,7 +233,7 @@ fun ProfileScreen(
         }
 
         OutlinedButton(
-            onClick = { /* estado */ },
+            onClick = { },
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
@@ -242,7 +247,6 @@ fun ProfileScreen(
             )
         }
 
-        // ======= Tabs =======
         val tabs = listOf("Publicaciones", "Mis juegos", "Vender")
         TabRow(selectedTabIndex = selectedTab, modifier = Modifier.padding(top = 8.dp)) {
             tabs.forEachIndexed { i, t ->
@@ -256,12 +260,11 @@ fun ProfileScreen(
 
         when (selectedTab) {
             0 -> PublicationsList(posts)
-            1 -> PurchasesList(purchases)
+            1 -> LocalPurchasesList(myGames)
             2 -> SellTab(onPublished = { selectedTab = 0; refreshAll() }, sellVm = sellVm)
         }
     }
 
-    /* ===== Diálogos para editar URL de foto/portada ===== */
     val currentUid = uid
     if (showEditAvatar && currentUid != null) {
         UrlEditDialog(
@@ -273,8 +276,6 @@ fun ProfileScreen(
                     try {
                         repo.updateProfileField(currentUid, "photoUrl", newUrl)
                         showEditAvatar = false
-                        // Forzar refresh del perfil en tu VM si lo necesitas
-                        // vm.refresh() si tienes método; si no, bastará cuando re-pinte.
                     } catch (e: Exception) {
                         errorMsg = e.message ?: "No se pudo actualizar la foto"
                     }
@@ -316,10 +317,7 @@ private fun PublicationsList(list: List<UsedGame>) {
     if (list.isEmpty()) {
         SectionText("Aún no has publicado juegos."); return
     }
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(list) { g ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -332,10 +330,7 @@ private fun PublicationsList(list: List<UsedGame>) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(g.title, style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            (g.platform ?: "-") + " • " + (g.city ?: "-"),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text((g.platform ?: "-") + " • " + (g.city ?: "-"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("$${"%,.0f".format(g.price)}", fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -345,14 +340,11 @@ private fun PublicationsList(list: List<UsedGame>) {
 }
 
 @Composable
-private fun PurchasesList(list: List<Product>) {
+private fun LocalPurchasesList(list: List<MyGame>) {
     if (list.isEmpty()) {
         SectionText("Aún no tienes compras registradas."); return
     }
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(list) { p ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -365,8 +357,7 @@ private fun PurchasesList(list: List<Product>) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(p.title, style = MaterialTheme.typography.titleMedium)
-                        Text(p.platform ?: "-", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$${"%,.0f".format(p.price)}", fontWeight = FontWeight.SemiBold)
+                        Text("Precio: $${"%,.0f".format(p.price)}", fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -376,16 +367,13 @@ private fun PurchasesList(list: List<Product>) {
 
 @Composable
 private fun SectionText(msg: String) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) { Text(msg, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+        Text(msg, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
-/* ========= Pestaña VENDER ========= */
 @Composable
-private fun SellTab(onPublished: () -> Unit, sellVm: SellViewModel) {
+private fun SellTab(onPublished: () -> Unit, sellVm: cl.duoc.levelappchile.ui.viewmodel.SellViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var title by remember { mutableStateOf("") }
     var platform by remember { mutableStateOf("PS5") }
@@ -396,6 +384,18 @@ private fun SellTab(onPublished: () -> Unit, sellVm: SellViewModel) {
     var sending by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    // ✅ Permisos de cámara/galería
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val granted = perms[Manifest.permission.CAMERA] == true ||
+                perms[Manifest.permission.READ_MEDIA_IMAGES] == true ||
+                perms[Manifest.permission.READ_EXTERNAL_STORAGE] == true
+        if (!granted) {
+            Toast.makeText(context, "Se requieren permisos para usar la cámara o galería", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bmp ->
         if (bmp != null) {
             @Suppress("DEPRECATION")
@@ -405,6 +405,7 @@ private fun SellTab(onPublished: () -> Unit, sellVm: SellViewModel) {
             photoUri = Uri.parse(path)
         }
     }
+
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) photoUri = uri
     }
@@ -424,8 +425,31 @@ private fun SellTab(onPublished: () -> Unit, sellVm: SellViewModel) {
         OutlinedTextField(desc, { desc = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { cameraLauncher.launch(null) }) { Text("Tomar foto") }
-            OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) { Text("Elegir de galería") }
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.CAMERA,
+                            Manifest.permission.READ_MEDIA_IMAGES,
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                        )
+                    )
+                }
+                cameraLauncher.launch(null)
+            }) { Text("Tomar foto") }
+
+            OutlinedButton(onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.READ_MEDIA_IMAGES,
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                        )
+                    )
+                }
+                galleryLauncher.launch("image/*")
+            }) { Text("Elegir de galería") }
+
             if (photoUri != null) AssistChip(onClick = { photoUri = null }, label = { Text("Quitar foto") })
         }
 
